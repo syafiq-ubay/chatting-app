@@ -1,30 +1,32 @@
 <template>
-  <div class="w-100 mt-3">
-    <h2 class="fw-600">Welcome to Profile section</h2>
+  <div class="profile-container">
+    <h2 class="profile-title">Edit Profile</h2>
+    <h4 class="subtitle"></h4>
     <div class="profile">
-      <img class="br-06" :src="photoURL" width="100%" height="100%" />
-      <label class="avatar">
-        <font-awesome-icon icon="pencil-alt" />
-        <input type="file" name="upload" class="w-0" @change="changeAvatar" />
-      </label>
+      <div class="avatar-wrapper">
+        <img class="avatar" :src="photoURL" alt="Avatar" />
+        <label class="avatar-edit">
+          <img src="../assets/edit.png" alt="" />
+          <input type="file" class="input-file" @change="changeAvatar" />
+        </label>
+      </div>
     </div>
     <div class="form-group">
-      <label>Name</label>
-      <input type="text" name="name" class="form-control" v-model="name" />
+      <label for="name">Name</label>
+      <input type="text" id="name" class="form-control" v-model="name" />
     </div>
     <div class="form-group">
-      <label>Tell me about yourself</label>
-      <input
-        type="text"
-        name="aboutMe"
-        class="form-control"
-        v-model="aboutMe"
-      />
+      <label for="aboutMe">Bio</label>
+      <textarea id="aboutMe" class="form-control" v-model="aboutMe"></textarea>
     </div>
-    <button type="button" class="btn btn-primary" v-on:click="uploadAvatar">
-      Save
-    </button>
-    <button type="button" class="btn btn-info" v-on:click="goBack">Back</button>
+    <div class="button-group">
+      <button type="button" class="btn btn-primary" @click="uploadAvatar">
+        Save
+      </button>
+      <button type="button" class="btn btn-secondary" @click="goBack">
+        Back
+      </button>
+    </div>
   </div>
 </template>
 
@@ -40,12 +42,8 @@ export default {
     return {
       firebaseDocId: localStorage.getItem("FirebaseDocumentId"),
       id: localStorage.getItem("id"),
-      name: localStorage.hasOwnProperty("name")
-        ? localStorage.getItem("name")
-        : "",
-      aboutMe: localStorage.hasOwnProperty("description")
-        ? localStorage.getItem("description")
-        : "",
+      name: localStorage.getItem("name") || "",
+      aboutMe: localStorage.getItem("description") || "",
       photoURL: localStorage.getItem("photoURL"),
       newPhoto: null,
     };
@@ -57,7 +55,7 @@ export default {
     changeAvatar(event) {
       if (event.target.files && event.target.files[0]) {
         const fileType = event.target.files[0].type.toString();
-        if (fileType.indexOf("image") !== 0) {
+        if (!fileType.startsWith("image")) {
           Vue.toasted.show("Please choose an image").goAway(1500);
           return;
         }
@@ -74,9 +72,7 @@ export default {
 
         uploadTask.on(
           "state_changed",
-          (snapshot) => {
-            // Progress handling can be done here
-          },
+          null,
           (error) => {
             console.log("error", error.message);
             Vue.toasted.show("Upload failed").goAway(1500);
@@ -96,7 +92,7 @@ export default {
         ? {
             name: this.name,
             description: this.aboutMe,
-            URL: downloadURL,
+            photoURL: downloadURL,
           }
         : {
             name: this.name,
@@ -120,7 +116,7 @@ export default {
     },
   },
   created() {
-    if (!localStorage.hasOwnProperty("id")) {
+    if (!localStorage.getItem("id")) {
       this.$router.push("/");
     }
   },
@@ -128,42 +124,140 @@ export default {
 </script>
 
 <style scoped>
-input[type="text"] {
-  margin: 0 auto;
-  width: 25%;
+body {
+  font-family: "Poppins", sans-serif;
+  background: #e0e7ff;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  margin: 0;
 }
-label {
-  font-size: 18px;
-  font-weight: 600;
+
+.profile-container {
+  padding: 40px;
+  background: #ffffff;
+  border-radius: 10px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  width: 500px;
+  text-align: center;
+  margin: 200px auto;
 }
-.fw-600 {
-  font-weight: 600;
+
+.profile-title {
+  color: #4a4a4a;
+  font-weight: 700;
+  margin-bottom: 10px;
 }
-.w-100 {
-  width: 100vw;
+
+.subtitle {
+  color: #7a7a7a;
+  font-weight: 400;
+  margin-bottom: 30px;
 }
-.w-0 {
-  width: 0;
-}
-.br-06 {
-  border-radius: 0.6rem;
-}
+
 .profile {
-  margin: 20px auto;
+  display: flex;
+  justify-content: center;
+  margin-bottom: 20px;
+}
+
+.avatar-wrapper {
+  position: relative;
   width: 150px;
   height: 150px;
-  background-color: royalblue;
-  position: relative;
-  border-radius: 0.6rem;
 }
+
 .avatar {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 50%;
+  border: 4px solid #fff;
+}
+
+.avatar-edit {
+  position: absolute;
+  right: 0;
+  bottom: 0;
   width: 35px;
   height: 35px;
-  background: #f46e13;
-  border-radius: 0.6rem;
-  position: absolute;
-  top: 115px;
-  right: 0px;
-  padding: 2px 0px 0px 7px;
+  background: #e7e7e7;
+  border-radius: 50%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  cursor: pointer;
+  border: 2px solid #fff;
+}
+
+.input-file {
+  display: none;
+}
+
+.form-group {
+  margin-bottom: 20px;
+  text-align: left;
+}
+
+label {
+  display: block;
+  font-size: 14px;
+  font-weight: 600;
+  margin-bottom: 5px;
+  color: #333;
+}
+
+.form-control {
+  width: 100%;
+  padding: 10px;
+  font-size: 14px;
+  border: 1px solid #dcdcdc;
+  border-radius: 5px;
+  margin-bottom: 20px;
+}
+
+.form-control:focus {
+  border-color: #a0a0a0;
+  box-shadow: 0 0 5px rgba(0, 0, 0, 0.1);
+}
+
+textarea.form-control {
+  resize: none;
+  height: 50px;
+}
+
+.button-group {
+  display: flex;
+  justify-content: space-between;
+}
+
+.btn {
+  width: 48%;
+  padding: 10px;
+  font-size: 14px;
+  border-radius: 5px;
+  color: #fff;
+  border: none;
+  cursor: pointer;
+}
+
+.btn-primary {
+  background-color: #6366f1;
+}
+
+.btn-primary:hover {
+  background-color: #4f46e5;
+}
+
+.btn-secondary {
+  background-color: #6c757d;
+}
+@media (max-width: 768px) {
+  .profile-container {
+    width: 100%;
+    max-width: none;
+    margin: 200px auto; /* Menengahkan secara horizontal */
+  }
 }
 </style>

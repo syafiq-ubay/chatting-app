@@ -1,34 +1,27 @@
 <template>
-  <div class="mt-4">
-    <h2>Welcome to Ubaiboy ChatApps</h2>
-    <form class="detail-box my-5">
-      <div class="form-group my-3">
-        <h4>Login to Chat</h4>
-        <input
-          type="text"
-          v-model="email"
-          class="form-control mb-4 mt-4"
-          placeholder="Enter your email..."
-        />
-        <input
-          type="password"
-          v-model="password"
-          class="form-control mb-4"
-          placeholder="Enter your password..."
-          v-on:keyup.enter="login"
-        />
-        <router-link :to="{ path: 'signup' }">
-          <h6 class="mb-3" style="font-weight: 600">Create account</h6>
+  <div class="login-container">
+    <form class="login-box" @submit.prevent="login">
+      <h2 class="title">Login</h2>
+      <h4 class="subtitle"></h4>
+      <input
+        type="text"
+        v-model="email"
+        class="form-control mb-3"
+        placeholder="email"
+      />
+      <input
+        type="password"
+        v-model="password"
+        class="form-control mb-3"
+        placeholder="password"
+        v-on:keyup.enter="login"
+      />
+      <button type="submit" class="btn btn-primary mb-3">Sign in</button>
+      <div class="alternative-option">
+        You don't have an account?
+        <router-link :to="{ path: 'signup' }" class="register-link">
+          Register
         </router-link>
-
-        <button
-          type="button"
-          v-on:click="login"
-          class="btn btn-primary"
-          style="font-weight: 600"
-        >
-          Login
-        </button>
       </div>
     </form>
   </div>
@@ -73,39 +66,118 @@ export default {
             localStorage.setItem("description", userData.description);
             localStorage.setItem("FirebaseDocumentId", doc.id);
           });
-          this.$router.push("/chat");
+
+          const currentRoute = this.$route.path;
+          const targetRoute = "/chat";
+
+          if (currentRoute !== targetRoute) {
+            this.$router.push(targetRoute);
+          } else {
+            console.log("Already on the target route:", targetRoute);
+          }
         }
       } catch (err) {
-        var errorCode = err.code;
-        var errormessage = err.message;
-        Vue.toasted.show(errorCode).goAway(1500);
-        Vue.toasted.show(errormessage).goAway(1500);
+        let errorMessage;
+        switch (err.code) {
+          case "auth/invalid-email":
+            errorMessage = "Format email tidak valid.";
+            break;
+          case "auth/user-disabled":
+            errorMessage = "Akun pengguna telah dinonaktifkan.";
+            break;
+          case "auth/user-not-found":
+            errorMessage = "Email pengguna tidak terdaftar.";
+            break;
+          case "auth/wrong-password":
+            errorMessage = "Email atau kata sandi salah.";
+            break;
+          case "auth/too-many-requests":
+            errorMessage = "Terlalu banyak percobaan login. Coba lagi nanti.";
+            break;
+          default:
+            errorMessage = "Email atau password salah. Silakan coba lagi.";
+            break;
+        }
+        Vue.toasted.show(errorMessage).goAway(5000);
       }
     },
   },
   created() {
-    // if (localStorage.getItem("id")) this.$router.push("/chat");x`x`
+    // if (localStorage.getItem("id")) this.$router.push("/chat");
   },
 };
 </script>
 
 <style scoped>
-input[type="text"],
-input[type="password"] {
-  margin: 0 auto;
-  width: 80%;
-  border: 1px solid lightgrey;
+.login-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  background-color: #e0e7ff;
 }
-.detail-box {
-  padding: 5px;
-  border: 1px solid lightgrey;
-  width: 400px;
-  min-height: 250px;
-  margin: 0 auto;
+
+.login-box {
+  padding: 40px;
+  background: #ffffff;
+  border-radius: 10px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  width: 350px;
+  text-align: center;
 }
-h2,
-h4 {
-  color: dodgerblue;
+
+.title {
+  color: #4a4a4a;
+  font-weight: 700;
+  margin-bottom: 10px;
+}
+
+.subtitle {
+  color: #7a7a7a;
+  font-weight: 400;
+  margin-bottom: 30px;
+}
+
+.form-control {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #dcdcdc;
+  border-radius: 5px;
+  margin-bottom: 20px;
+}
+
+.form-control:focus {
+  border-color: #a0a0a0;
+  box-shadow: 0 0 5px rgba(0, 0, 0, 0.1);
+}
+
+.btn-primary {
+  width: 100%;
+  padding: 10px;
+  border: none;
+  border-radius: 5px;
+  background-color: #6366f1;
+  color: #fff;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.btn-primary:hover {
+  background-color: #4f46e5;
+}
+
+.alternative-option {
+  margin-top: 20px;
+  color: #7a7a7a;
+}
+
+.register-link {
+  color: #6366f1;
   font-weight: 600;
+  text-decoration: none;
+}
+
+.register-link:hover {
+  text-decoration: underline;
 }
 </style>

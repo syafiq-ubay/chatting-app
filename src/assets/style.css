@@ -5,7 +5,8 @@
 @import "https://fonts.googleapis.com/css?family=Poppins:300,400,500,600,700";
 body {
   font-family: "Poppins", sans-serif;
-  background: #fafafa;
+  background: #e0e7ff;
+  ;
 }
 
 p {
@@ -62,9 +63,10 @@ a:focus {
   left: 0;
   height: 100vh;
   z-index: 999;
-  background: royalblue;
+  background: rgb(151, 159, 185);
   color: black;
   transition: all 0.3s;
+  box-shadow: 3px 3px rgb(164, 161, 161);
 }
 
 #sidebar.active {
@@ -73,7 +75,7 @@ a:focus {
 
 #sidebar .sidebar-header {
   padding: 20px;
-  background: royalblue;
+  background: rgb(151, 159, 185);
 }
 
 #sidebar ul.components {

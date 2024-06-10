@@ -5,6 +5,7 @@
         <img
           :src="currentPeerUser.URL"
           width="40px"
+          height="40px"
           class="br-50 header-image"
         />
         <div class="header-image">
@@ -14,8 +15,10 @@
         </div>
       </div>
     </header>
-    <div style="background: #efe9e2; flex: 1; overflow-y: auto">
-      <h2 class="welcome">Welcome to Chatbox</h2>
+    <div
+      style="background: #efe9e2; flex: 1; overflow-y: auto"
+      ref="messagesContainer"
+    >
       <div class="text-outer">
         <div
           :class="item.idFrom === currentUserId ? 'textFrom' : 'textTo'"
@@ -24,44 +27,23 @@
           :key="item.id"
         >
           <h6>{{ item.content }}</h6>
+          <small>{{ formatTimestamp(item.timestamp) }}</small>
         </div>
       </div>
     </div>
     <footer>
       <div style="min-height: 60px; background: lightgrey">
-        <div style="display: flex; padding: 15px">
-          <img
-            class="mr-3 pointer"
-            src="../assets/picture.png"
-            alt="select picture"
-            width="30px"
-            height="30px"
-          />
-          <img
-            class="mr-3 pointer"
-            src="../assets/sticker.png"
-            alt="select sticker"
-            width="30px"
-            height="30px"
-          />
+        <div style="display: flex; padding: 15px; align-items: center">
           <input
             type="text"
-            style="
-              width: 85%;
-              border: 1px solid transparent;
-              border-radius: 4px;
-              padding: 5px 10px;
-            "
-            class="mr-3"
+            class="chat-input"
             v-model="inputValue"
             v-on:keyup.enter="sendMessage"
           />
           <img
-            class="mr-2 pointer"
+            class="send-icon pointer"
             src="../assets/send.png"
             alt="send message"
-            width="30px"
-            height="30px"
             v-on:click="sendMessage"
           />
         </div>
@@ -86,6 +68,8 @@ export default {
       inputValue: "",
       listMessage: [],
       groupChatId: null,
+      unsubscribe: null, // Untuk menyimpan referensi listener
+      messagesCache: {}, // Cache pesan yang telah dimuat
     };
   },
   watch: {
@@ -100,9 +84,9 @@ export default {
       if (this.inputValue.trim() === "") {
         return;
       }
-      const timestamp = moment().valueOf().toString();
+      const timestamp = moment().toISOString();
       const message = {
-        id: timestamp,
+        id: moment().valueOf().toString(),
         idFrom: this.currentUserId,
         idTo: this.currentPeerUser.id,
         timestamp: timestamp,
@@ -112,11 +96,14 @@ export default {
         await setDoc(
           doc(
             collection(db, "Messages", this.groupChatId, this.groupChatId),
-            timestamp
+            message.id
           ),
           message
         );
         this.inputValue = "";
+        this.$nextTick(() => {
+          this.scrollToBottom();
+        });
       } catch (error) {
         console.error("Error sending message: ", error);
       }
@@ -124,25 +111,79 @@ export default {
     getMessages() {
       const userIds = [this.currentUserId, this.currentPeerUser.id];
       userIds.sort();
-      this.groupChatId = userIds.join("-");
+      const newGroupChatId = userIds.join("-");
 
-      const messagesCollection = collection(
-        db,
-        "Messages",
-        this.groupChatId,
-        this.groupChatId
-      );
-      onSnapshot(messagesCollection, (snapshot) => {
-        snapshot.docChanges().forEach((change) => {
-          if (change.type === "added") {
-            this.listMessage.push(change.doc.data());
-          }
+      // Hanya panggil onSnapshot jika groupChatId berubah
+      if (this.groupChatId !== newGroupChatId) {
+        this.groupChatId = newGroupChatId;
+
+        // Batalkan listener sebelumnya jika ada
+        if (this.unsubscribe) {
+          this.unsubscribe();
+        }
+
+        // Periksa cache pesan
+        if (this.messagesCache[this.groupChatId]) {
+          this.listMessage = this.messagesCache[this.groupChatId];
+        } else {
+          this.listMessage = [];
+        }
+
+        const messagesCollection = collection(
+          db,
+          "Messages",
+          this.groupChatId,
+          this.groupChatId
+        );
+
+        this.unsubscribe = onSnapshot(messagesCollection, (snapshot) => {
+          const newMessages = [];
+          snapshot.docChanges().forEach((change) => {
+            if (change.type === "added") {
+              const newMessage = change.doc.data();
+              // Periksa apakah pesan sudah ada dalam listMessage
+              if (!this.listMessage.some((msg) => msg.id === newMessage.id)) {
+                newMessages.push(newMessage);
+              }
+            }
+          });
+
+          // Gabungkan pesan baru dengan yang sudah ada
+          this.listMessage = [...this.listMessage, ...newMessages];
+          this.messagesCache[this.groupChatId] = this.listMessage;
+
+          // Tunggu hingga DOM diperbarui, lalu scroll ke bawah
+          this.$nextTick(() => {
+            this.scrollToBottom();
+          });
         });
-      });
+      }
+    },
+    scrollToBottom() {
+      const container = this.$refs.messagesContainer;
+      container.scrollTop = container.scrollHeight;
+    },
+    formatTimestamp(timestamp) {
+      const messageDate = moment(timestamp).format("YYYY-MM-DD");
+      const currentDate = moment().format("YYYY-MM-DD");
+
+      if (messageDate === currentDate) {
+        // Tampilkan hanya jam
+        return moment(timestamp).format("HH:mm");
+      } else {
+        // Tampilkan tanggal dan jam
+        return moment(timestamp).format("DD-MM-YYYY HH:mm");
+      }
     },
   },
   mounted() {
     this.getMessages();
+  },
+  beforeDestroy() {
+    // Batalkan listener saat komponen dihancurkan
+    if (this.unsubscribe) {
+      this.unsubscribe();
+    }
   },
 };
 </script>
@@ -164,6 +205,7 @@ export default {
 .text-outer {
   display: flex;
   flex-direction: column;
+  background-image: url(../assets/background.png);
 }
 .text-inner {
   padding: 10px 10px 2px;
@@ -171,16 +213,28 @@ export default {
   width: 20%;
 }
 .textFrom {
-  background: teal;
+  background-color: #009200;
   color: white;
-  margin: 0% 0% 20px 70%;
+  margin: 0% 0% 20px 75%;
+  text-align: left;
 }
 .textTo {
-  background: lightcoral;
-  color: black;
+  background-color: #55675d;
+  color: rgb(253, 253, 253);
   margin: 0% 0% 20px 5%;
+  text-align: right;
 }
 .pointer {
   cursor: pointer;
+}
+.chat-input {
+  flex: 1; /*Perubahan dilakukan di sini */
+  border: 1px solid transparent;
+  border-radius: 4px;
+  padding: 5px 10px;
+  margin-right: 10px; /* Perubahan dilakukan di sini */
+}
+.send-icon {
+  margin-left: 10px; /* Perubahan dilakukan di sini */
 }
 </style>

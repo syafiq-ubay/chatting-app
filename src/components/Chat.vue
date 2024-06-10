@@ -21,11 +21,22 @@
         </button>
       </div>
       <div style="height: 1px; border-bottom: 1px solid #00388b"></div>
+
+      <!-- Search Input -->
+      <div class="search-bar">
+        <input
+          type="text"
+          v-model="searchQuery"
+          placeholder="Search..."
+          class="form-control"
+        />
+      </div>
+
       <ul class="list-unstyled components">
         <li
           class="active mb-3"
           v-on:click="letsChat(item)"
-          v-for="item in searchUsers"
+          v-for="item in filteredUsers"
           :key="item.id"
           v-show="item.id != currentUserId"
         >
@@ -61,7 +72,7 @@
     <!-- Konten Halaman  -->
     <div id="content" v-if="currentPeerUser === null">
       <div class="my-4">
-        <img :src="photoURL" width="200px" class="br-50" />
+        <img :src="photoURL" width="200px" height="200px" class="br-50" />
       </div>
       <div>
         <h2>Selamat datang {{ currentUserName }}</h2>
@@ -91,6 +102,7 @@ export default {
       currentUserPhoto: localStorage.getItem("photoURL"),
       searchUsers: [],
       photoURL: localStorage.getItem("photoURL"),
+      searchQuery: "", // New search query data property
     };
   },
   methods: {
@@ -123,6 +135,13 @@ export default {
       }
     },
   },
+  computed: {
+    filteredUsers() {
+      return this.searchUsers.filter(user =>
+        user.name.toLowerCase().includes(this.searchQuery.toLowerCase())
+      );
+    },
+  },
   created() {
     if (!localStorage.hasOwnProperty("id")) {
       this.$router.push("/");
@@ -147,5 +166,22 @@ export default {
   position: absolute;
   top: 0;
   right: 0;
+}
+.btn {
+  background-color: #6366f1;
+  height: 40px;
+}
+.search-bar {
+  padding: 10px 0px;
+  width: 310px;
+}
+.form-control {
+  background-color: #fff;
+  border: 1px solid #00388b;
+  border-radius: 4px;
+  color: #333;
+  font-size: 14px;
+  padding: 8px;
+  width: calc(100% - 20px);
 }
 </style>
